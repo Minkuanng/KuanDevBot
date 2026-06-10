@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>NODE BOT - BACKGROUND AUTO RUN</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap');
+:root{
+  --bg:#060810;--sur:#0d0f18;--card:#111520;--b1:#1c2235;--b2:#2a3050;
+  --cy:#00e5ff;--gr:#39ff14;--re:#ff3354;--ye:#ffe135;
+  --dim:#3a4460;--tx:#b8c4dc;--wh:#e8edf8;
+  --mono:'Share Tech Mono',monospace;--hd:'Rajdhani',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--mono);overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,.01) 2px,rgba(0,229,255,.01) 4px);pointer-events:none;z-index:9999}
+.app{display:flex;flex-direction:column;height:100dvh}
+.pages{flex:1;overflow:hidden}
+.page{display:none;flex-direction:column;gap:10px;padding:12px;height:100%;overflow-y:auto}
+.page.active{display:flex}
+header{background:var(--sur);border-bottom:1px solid var(--b1);padding:0 14px;height:54px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.hdr-title{font-family:var(--hd);font-size:20px;font-weight:700;color:var(--cy);letter-spacing:3px;text-shadow:0 0 12px rgba(0,229,255,.4)}
+.hdr-sub{font-size:9px;color:var(--dim);letter-spacing:2px;margin-top:1px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ye);box-shadow:0 0 6px var(--ye);transition:all .4s}
+.dot.on{background:var(--gr);box-shadow:0 0 8px var(--gr)}
+.dot.off{background:var(--re);box-shadow:0 0 8px var(--re)}
+.clabel{font-size:9px;color:var(--dim);letter-spacing:1px}
+.tabs{display:flex;background:var(--sur);border-bottom:1px solid var(--b1);flex-shrink:0}
+.tab{flex:1;padding:9px 4px 7px;text-align:center;font-family:var(--hd);font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;user-select:none}
+.tab.active{color:var(--cy);border-bottom-color:var(--cy)}
+.card{background:var(--card);border:1px solid var(--b1);border-radius:6px;padding:12px;position:relative}
+.card::before,.card::after{content:'';position:absolute;width:10px;height:10px;border-color:var(--cy);border-style:solid;opacity:.4}
+.card::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.card::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+.card-head{font-family:var(--hd);font-size:11px;font-weight:700;letter-spacing:2px;color:var(--cy);margin-bottom:10px}
+input[type=text],textarea,select{width:100%;background:#08090f;border:1px solid var(--b2);border-radius:4px;color:var(--wh);font-family:var(--mono);outline:none;transition:border-color .2s}
+input[type=text],select{font-size:13px;padding:8px 10px}
+textarea{font-size:12px;line-height:1.65;padding:10px;resize:vertical;min-height:160px;color:var(--gr)}
+input[type=range]{width:100%;background:#1c2235;height:2px;-webkit-appearance:none}
+input[type=range]:focus{outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cy);cursor:pointer}
+input:focus,textarea:focus,select:focus{border-color:var(--cy)}
+.flabel{font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:4px}
+.brow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border:none;border-radius:4px;font-family:var(--hd);font-size:13px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:opacity .15s,transform .1s;user-select:none;background:transparent}
+.btn:active{transform:scale(.96)}
+.btn-run{border:1px solid var(--gr);color:var(--gr)}
+.btn-save{border:1px solid var(--cy);color:var(--cy)}
+.btn-dim{border:1px solid var(--b2);color:var(--dim);padding:6px 10px;font-size:11px;letter-spacing:1px}
+.tbar{background:#090b14;border:1px solid var(--b1);border-bottom:none;border-radius:4px 4px 0 0;padding:5px 10px;display:flex;align-items:center;gap:5px}
+.tdot{width:7px;height:7px;border-radius:50%}
+.tbar-title{font-size:9px;letter-spacing:2px;color:var(--dim);margin-left:4px}
+.tbar-r{margin-left:auto;display:flex;gap:6px;align-items:center}
+.terminal{background:#04060c;border:1px solid var(--b1);border-top:none;border-radius:0 0 4px 4px;padding:10px 12px;font-size:11.5px;line-height:1.75;min-height:110px;max-height:240px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.lo{color:var(--tx)}.lok{color:var(--gr)}.ler{color:var(--re)}.lwa{color:var(--ye)}.lsy{color:var(--cy)}
+.badge-run{display:none;font-size:9px;letter-spacing:2px;color:var(--ye);border:1px solid var(--ye);border-radius:2px;padding:1px 6px;animation:pu .8s ease-in-out infinite alternate}
+@keyframes pu{from{opacity:.4}to{opacity:1}}
+.file-item{background:#08090f;border:1px solid var(--b1);border-radius:4px;padding:9px 11px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .2s;margin-bottom:7px}
+.file-item:hover{border-color:var(--cy)}
+.file-num{font-size:10px;color:var(--dim);width:25px;flex-shrink:0}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:13px;font-weight:600;color:var(--wh);font-family:var(--hd)}
+.file-preview{font-size:10px;color:var(--dim);margin-top:2px}
+.file-badge{background:var(--ye);color:#000;font-size:8px;padding:2px 5px;border-radius:3px;margin-left:6px}
+.file-badge.bg-active{background:var(--gr)}
+.file-buttons{display:flex;gap:5px}
+.ibtn{background:transparent;border:1px solid var(--b2);border-radius:3px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:var(--hd);font-size:11px;font-weight:700;transition:border-color .15s,color .15s}
+.ibtn-run{color:var(--gr)}.ibtn-run:hover{border-color:var(--gr)}
+.ibtn-auto{color:var(--cy)}.ibtn-auto:hover{border-color:var(--cy)}
+.ibtn-del{color:var(--re)}.ibtn-del:hover{border-color:var(--re)}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sbox{background:#08090f;border:1px solid var(--b1);border-radius:4px;padding:14px 10px 10px;text-align:center}
+.snum2{font-family:var(--hd);font-size:30px;font-weight:700;color:var(--cy);line-height:1;text-shadow:0 0 10px rgba(0,229,255,.35)}
+.slbl{font-size:9px;letter-spacing:2px;color:var(--dim);margin-top:4px}
+.rules-banner{background:#1a1200;border:1px solid var(--ye);border-radius:6px;padding:12px 14px;font-size:11px;line-height:1.9;color:#e8d080}
+.rules-code{background:#0a0800;border:1px solid #3a3000;border-radius:4px;padding:10px;margin:8px 0;font-family:var(--mono);font-size:11px;color:#ffe135;white-space:pre;overflow-x:auto}
+#toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--card);border:1px solid var(--cy);border-radius:4px;padding:7px 16px;font-size:11px;letter-spacing:1px;color:var(--cy);z-index:9998;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{border-color:var(--re);color:var(--re)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--b2)}
+.slider-group{background:#0b0e16;padding:10px;border-radius:6px;margin:8px 0}
+.slider-value{color:var(--cy);font-weight:bold;font-size:14px;margin-left:8px}
+@media(min-width:480px){.page{max-width:580px;margin:0 auto}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <rect x="8" y="10" width="20" height="16" rx="2" stroke="#00e5ff" stroke-width="1.5"/>
+    <rect x="13" y="4" width="10" height="6" rx="1" stroke="#00e5ff" stroke-width="1.2"/>
+    <line x1="18" y1="10" x2="18" y2="4" stroke="#00e5ff" stroke-width="1.2"/>
+    <rect x="11" y="14" width="5" height="4" rx="1" fill="#00e5ff" opacity=".85"/>
+    <rect x="20" y="14" width="5" height="4" rx="1" fill="#00e5ff" opacity=".85"/>
+    <rect x="13" y="21" width="10" height="2" rx="1" fill="#00e5ff" opacity=".5"/>
+    <line x1="4" y1="18" x2="8" y2="18" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="28" y1="18" x2="32" y2="18" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+  <div><div class="hdr-title">NODE BOT</div><div class="hdr-sub">BACKGROUND AUTO v3.0</div></div>
+  <div class="hdr-right"><div class="dot" id="dot"></div><div class="clabel" id="clabel">INIT</div></div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-run" onclick="goTab('run')">RUN</div>
+  <div class="tab" id="tab-files" onclick="goTab('files')">📁 FILES</div>
+  <div class="tab" id="tab-stats" onclick="goTab('stats')">STATS</div>
+</div>
+
+<div class="pages">
+<!-- RUN PAGE -->
+<div class="page active" id="page-run">
+  <div class="rules-banner" id="rules-banner" style="display:none">
+    <strong>⚠ CẦN CẬP NHẬT RULES</strong>
+    <div class="rules-code">{"rules":{".read":true,".write":true}}</div>
+    <div class="brow"><button class="btn btn-run" onclick="retryConnect()">RETRY</button><button class="btn btn-dim" onclick="document.getElementById('rules-banner').style.display='none'">DISMISS</button></div>
+  </div>
+  <div class="card">
+    <div class="card-head">✏️ EDITOR</div>
+    <div class="flabel">FILE NAME</div>
+    <input type="text" id="script-name" placeholder="my_script" autocomplete="off"/>
+    <div class="flabel" style="margin-top:8px">CODE</div>
+    <textarea id="code-editor" placeholder="console.log('Hello Auto Bot');&#10;&#10;async function main() {&#10;  console.log('Running...');&#10;}&#10;main();"></textarea>
+    <div class="brow">
+      <button class="btn btn-run" onclick="runCode()">▶ RUN</button>
+      <button class="btn btn-save" onclick="saveCurrentFile()">💾 SAVE</button>
+      <button class="btn btn-dim" onclick="clearEditor()">🗑 CLR</button>
+    </div>
+  </div>
+  <div>
+    <div class="tbar"><div class="tdot" style="background:#ff3354"></div><div class="tdot" style="background:#ffe135"></div><div class="tdot" style="background:#39ff14"></div><span class="tbar-title">OUTPUT</span>
+    <div class="tbar-r"><span class="badge-run" id="run-badge">RUNNING</span><span class="badge-run" id="auto-badge" style="border-color:#00e5ff;display:none">AUTO MODE</span><button class="btn btn-dim" style="padding:3px 9px" onclick="clearTerminal()">CLR</button><button class="btn btn-dim" style="padding:3px 9px" onclick="copyOutput()">COPY</button></div></div>
+    <div class="terminal" id="terminal"><span class="lsy">&gt; NODE BOT READY&#10;</span></div>
+  </div>
+</div>
+
+<!-- FILES PAGE -->
+<div class="page" id="page-files">
+  <div class="card">
+    <div class="card-head">📂 ALL FILES</div>
+    <input type="text" id="search-files" placeholder="SEARCH..." oninput="renderFileList()" style="margin-bottom:10px"/>
+    <div id="files-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-head">🌙 BACKGROUND AUTO-RUN</div>
+    <div class="flabel">Chọn file chạy ngầm (tự động khi web mở)</div>
+    <select id="bg-file-select" onchange="setBackgroundFile()" style="margin-bottom:10px">
+      <option value="">-- KHÔNG CHẠY NGẦM --</option>
+    </select>
+    
+    <div class="slider-group">
+      <div class="flabel">⏱️ CHU KỲ CHẠY NGẦM: <span id="bg-interval-value" style="color:var(--cy);font-weight:bold">5</span> giây</div>
+      <input type="range" id="bg-interval-slider" min="1" max="300" value="5" step="1" oninput="updateBgIntervalValue(this.value)">
+      <div style="display:flex;justify-content:space-between;margin-top:5px">
+        <span style="font-size:9px">1s</span><span style="font-size:9px">60s</span><span style="font-size:9px">120s</span><span style="font-size:9px">180s</span><span style="font-size:9px">300s</span>
+      </div>
+    </div>
+    
+    <div class="brow">
+      <button class="btn btn-save" onclick="applyBgInterval()">💾 ÁP DỤNG CHU KỲ</button>
+      <button class="btn btn-dim" onclick="stopBackgroundRunner()">⏹️ DỪNG NGẦM</button>
+      <button class="btn btn-run" onclick="startBackgroundManually()">▶️ CHẠY THỬ NGẦM</button>
+    </div>
+    <div id="bg-status" style="font-size:11px;color:var(--dim);padding:8px;background:#08090f;border-radius:4px;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- STATS PAGE -->
+<div class="page" id="page-stats">
+  <div class="card"><div class="card-head">STATISTICS</div>
+    <div class="sgrid"><div class="sbox"><div class="snum2" id="st-total">0</div><div class="slbl">FILES</div></div>
+    <div class="sbox"><div class="snum2" id="st-runs">0</div><div class="slbl">RUNS</div></div>
+    <div class="sbox"><div class="snum2" id="st-ok" style="color:var(--gr)">0</div><div class="slbl">SUCCESS</div></div>
+    <div class="sbox"><div class="snum2" id="st-err" style="color:var(--re)">0</div><div class="slbl">ERRORS</div></div></div>
+  </div>
+  <div class="card"><div class="card-head">📋 RECENT RUNS</div><div id="recent-runs" style="font-size:11px"></div></div>
+  <div class="card"><div class="card-head">💻 SYSTEM</div><div id="fb-info">FIREBASE : CONNECTING...</div></div>
+</div>
+</div>
+</div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ========================= CONFIG =========================
+const FB_CONFIG = {
+  apiKey: "AIzaSyDiUGWq-aiwz22PIrdqjXbmvmqdoaxiSKs",
+  authDomain: "appp-29476.firebaseapp.com",
+  databaseURL: "https://appp-29476-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "appp-29476",
+  storageBucket: "appp-29476.firebasestorage.app",
+  messagingSenderId: "858592212979",
+  appId: "1:858592212979:web:34344bb74d30df377a8486"
+};
+
+let fbApp, db, fbReady = false;
+let allFiles = {};
+let stats = { runs:0, ok:0, err:0 };
+let runLogs = [];
+let autoTimer = null, isAutoRunning = false;
+let backgroundTimer = null, bgFileId = null, bgIntervalSec = 5;
+
+// ========================= FIREBASE =========================
+function initFirebase() {
+  try {
+    fbApp = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(FB_CONFIG);
+    db = firebase.database(fbApp);
+    attachListeners();
+  } catch(e) { setConn(false, 'ERROR'); showRules(e.message); }
+}
+
+function attachListeners() {
+  db.ref('_ping').set(Date.now()).then(() => {
+    fbReady = true;
+    setConn(true, 'ONLINE');
+    document.getElementById('fb-info').innerHTML = 'FIREBASE : ✅ ONLINE';
+    document.getElementById('rules-banner').style.display = 'none';
+    tline('> FIREBASE CONNECTED', 'lsy');
+    
+    db.ref('files').on('value', snap => { allFiles = snap.val() || {}; renderFileList(); document.getElementById('st-total').innerText = Object.keys(allFiles).length; loadBackgroundSettings(); });
+    db.ref('stats').on('value', snap => { if(snap.val()) stats = snap.val(); updateStatsUI(); });
+    db.ref('runs').limitToLast(20).on('value', snap => { runLogs = snap.val() ? Object.values(snap.val()).reverse() : []; renderRuns(); });
+    db.ref('config/backgroundFile').on('value', snap => { bgFileId = snap.val(); loadBackgroundSettings(); });
+    db.ref('config/bgInterval').on('value', snap => { if(snap.val()) { bgIntervalSec = snap.val(); document.getElementById('bg-interval-slider').value = bgIntervalSec; document.getElementById('bg-interval-value').innerText = bgIntervalSec; } });
+    db.ref('_ping').remove();
+  }).catch(e => { fbReady = false; handleFbError(e); });
+}
+
+function handleFbError(e) {
+  let msg = e.message;
+  if(msg.includes('PERMISSION_DENIED')) { setConn(false, 'NO RULES'); showRules(); document.getElementById('fb-info').innerHTML = '❌ PERMISSION DENIED'; }
+  else { setConn(false, 'ERROR'); toast('Firebase lỗi: '+msg.substring(0,50), 'err'); }
+}
+
+function retryConnect() { setConn(false, 'RETRY'); try { db.ref('files').off(); db.ref('stats').off(); db.ref('runs').off(); } catch(e){} setTimeout(() => attachListeners(), 500); }
+function showRules() { document.getElementById('rules-banner').style.display = 'block'; goTab('run'); }
+function setConn(ok, label) { let d = document.getElementById('dot'), l = document.getElementById('clabel'); if(d) d.className = 'dot '+(ok?'on':'off'); if(l) l.textContent = label||(ok?'ONLINE':'OFFLINE'); }
+function toast(msg, type) { let el = document.getElementById('toast'); if(!el) return; el.textContent = msg; el.className = 'show'+(type?' '+type:''); clearTimeout(window._tt); window._tt = setTimeout(() => el.className='', 2500); }
+function tline(text, cls) { let el = document.getElementById('terminal'); if(!el) return; let sp = document.createElement('span'); sp.className = cls||'lo'; sp.textContent = text+'\n'; el.appendChild(sp); el.scrollTop = el.scrollHeight; }
+function goTab(id) { ['run','files','stats'].forEach(t => { document.getElementById(`tab-${t}`)?.classList.toggle('active', t===id); document.getElementById(`page-${t}`)?.classList.toggle('active', t===id); }); }
+
+// ========================= FILE MANAGEMENT =========================
+function saveCurrentFile() {
+  let name = document.getElementById('script-name').value.trim();
+  let code = document.getElementById('code-editor').value;
+  if(!name) { toast('Nhập tên file!', 'warn'); return; }
+  if(!code.trim()) { toast('Code rỗng!', 'warn'); return; }
+  if(!fbReady) { toast('Chưa kết nối Firebase!', 'err'); return; }
+  let fileId = name.replace(/[^a-zA-Z0-9_\-]/g, '_').toLowerCase();
+  db.ref(`files/${fileId}`).set({ name: name, code: code, updatedAt: Date.now() })
+    .then(() => toast(`✅ Đã lưu: ${name}`))
+    .catch(e => toast('Lưu thất bại!', 'err'));
+}
+
+function loadFile(fileId, fileData) {
+  document.getElementById('script-name').value = fileData.name;
+  document.getElementById('code-editor').value = fileData.code;
+  goTab('run');
+  toast(`📁 Đã mở: ${fileData.name}`);
+}
+
+function deleteFile(fileId, ev) {
+  ev.stopPropagation();
+  let file = allFiles[fileId];
+  if(!confirm(`Xóa "${file?.name}"?`)) return;
+  if(bgFileId === fileId) setBackgroundFileValue(null);
+  db.ref(`files/${fileId}`).remove().then(() => toast(`Đã xóa: ${file?.name}`)).catch(e => toast('Xóa thất bại!', 'err'));
+}
+
+function runFile(fileId, ev) {
+  ev.stopPropagation();
+  let file = allFiles[fileId];
+  if(file) executeCode(file.code, file.name, false);
+}
+
+function setAsBackground(fileId, ev) {
+  ev.stopPropagation();
+  if(bgFileId === fileId) setBackgroundFileValue(null);
+  else setBackgroundFileValue(fileId);
+}
+
+function setBackgroundFileValue(fileId) {
+  if(!fbReady) { toast('Chưa kết nối Firebase!', 'err'); return; }
+  db.ref('config/backgroundFile').set(fileId)
+    .then(() => toast(fileId ? `✅ Đã set chạy ngầm: ${allFiles[fileId]?.name}` : '⏹️ Đã tắt chạy ngầm'))
+    .catch(e => toast('Lỗi cập nhật!', 'err'));
+}
+
+function updateBgIntervalValue(val) {
+  document.getElementById('bg-interval-value').innerText = val;
+}
+
+function applyBgInterval() {
+  let val = parseInt(document.getElementById('bg-interval-slider').value, 10);
+  if(isNaN(val) || val < 1) val = 5;
+  bgIntervalSec = val;
+  if(fbReady) {
+    db.ref('config/bgInterval').set(val).catch(()=>{});
+  }
+  toast(`⏱️ Đã cập nhật chu kỳ: ${val} giây`, 'ok');
+  if(bgFileId && allFiles[bgFileId]) {
+    startBackgroundRunner();
+  }
+}
+
+function loadBackgroundSettings() {
+  let select = document.getElementById('bg-file-select');
+  if(select) {
+    let opts = '<option value="">-- KHÔNG CHẠY NGẦM --</option>';
+    Object.entries(allFiles).forEach(([id, f]) => { opts += `<option value="${id}" ${bgFileId===id ? 'selected' : ''}>📄 ${f.name}</option>`; });
+    select.innerHTML = opts;
+  }
+  let statusDiv = document.getElementById('bg-status');
+  if(bgFileId && allFiles[bgFileId]) {
+    statusDiv.innerHTML = `🌙 <span style="color:var(--gr)">ĐANG CHẠY NGẦM</span><br>📄 File: ${allFiles[bgFileId].name}<br>⏱️ Chu kỳ: ${bgIntervalSec} giây`;
+    startBackgroundRunner();
+  } else {
+    statusDiv.innerHTML = `⚫ KHÔNG có file nào được chạy ngầm`;
+    stopBackgroundRunner();
+  }
+}
+
+function startBackgroundRunner() {
+  if(backgroundTimer) clearInterval(backgroundTimer);
+  if(!bgFileId || !allFiles[bgFileId]) return;
+  let interval = bgIntervalSec;
+  if(isNaN(interval) || interval < 1) interval = 5;
+  backgroundTimer = setInterval(() => {
+    if(bgFileId && allFiles[bgFileId] && fbReady) {
+      console.log(`[BACKGROUND] Running ${allFiles[bgFileId].name}`);
+      executeCode(allFiles[bgFileId].code, `[BG] ${allFiles[bgFileId].name}`, true);
+    }
+  }, interval * 1000);
+  tline(`🌙 BACKGROUND MODE ACTIVE: ${allFiles[bgFileId].name} (every ${interval}s)`, 'lsy');
+}
+
+function stopBackgroundRunner() { 
+  if(backgroundTimer) { 
+    clearInterval(backgroundTimer); 
+    backgroundTimer = null; 
+    tline('🌙 BACKGROUND MODE STOPPED', 'lwa');
+    let statusDiv = document.getElementById('bg-status');
+    if(statusDiv && bgFileId && allFiles[bgFileId]) {
+      statusDiv.innerHTML = `⏸️ <span style="color:var(--ye)">ĐÃ DỪNG CHẠY NGẦM</span><br>📄 File: ${allFiles[bgFileId].name}<br>⏱️ Chu kỳ: ${bgIntervalSec} giây<br><span style="color:var(--dim)">⚠️ Đã dừng, bấm "CHẠY THỬ NGẦM" để kích hoạt lại</span>`;
+    }
+  } 
+}
+
+function startBackgroundManually() { 
+  if(bgFileId && allFiles[bgFileId]) {
+    startBackgroundRunner();
+    toast('🌙 Đã kích hoạt chạy ngầm!', 'ok');
+  } else {
+    toast('❌ Chưa chọn file chạy ngầm!', 'warn'); 
+  }
+}
+
+function setBackgroundFile() { 
+  let val = document.getElementById('bg-file-select').value; 
+  setBackgroundFileValue(val || null); 
+}
+
+function renderFileList() {
+  let q = (document.getElementById('search-files')?.value || '').toLowerCase();
+  let container = document.getElementById('files-list');
+  let entries = Object.entries(allFiles).filter(([id, f]) => f.name.toLowerCase().includes(q) || f.code.toLowerCase().includes(q));
+  if(!entries.length) { container.innerHTML = '<div style="font-size:11px;color:var(--dim);padding:20px;text-align:center">📭 KHÔNG CÓ FILE NÀO</div>'; return; }
+  container.innerHTML = entries.map(([id, f], idx) => `
+    <div class="file-item" onclick="loadFile('${id}', allFiles['${id}'])">
+      <div class="file-num">${String(idx+1).padStart(2,'0')}</div>
+      <div class="file-info">
+        <div class="file-name">${escapeHtml(f.name)} ${bgFileId === id ? '<span class="file-badge bg-active">🌙 NGẦM</span>' : ''}</div>
+        <div class="file-preview">${escapeHtml(f.code.substring(0, 60))}...</div>
+      </div>
+      <div class="file-buttons">
+        <button class="ibtn ibtn-run" onclick="runFile('${id}', event)">▶</button>
+        <button class="ibtn ibtn-auto" onclick="setAsBackground('${id}', event)" title="Set chạy ngầm">🌙</button>
+        <button class="ibtn ibtn-del" onclick="deleteFile('${id}', event)">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ========================= EXECUTION ENGINE =========================
+function executeCode(code, name, isBackground = false) {
+  if(!code || !code.trim()) return;
+  let t0 = performance.now(), log = [];
+  if(!isBackground) {
+    let badge = document.getElementById('run-badge');
+    if(badge) badge.style.display = 'inline';
+  }
+  tline(isBackground ? `🌙 [BG] RUN: ${name}` : `▶ RUN: ${name}  ${new Date().toLocaleTimeString()}`, 'lsy');
+  tline(`> ${'─'.repeat(34)}`, 'lsy');
+  
+  let con = {
+    log: (...a) => { let s = a.map(v=>typeof v==='object'?JSON.stringify(v):String(v)).join(' '); log.push(s); tline(s,'lok'); },
+    error: (...a) => { let s = a.map(v=>String(v)).join(' '); log.push(`[ERR] ${s}`); tline(`[ERR] ${s}`,'ler'); },
+    warn: (...a) => { let s = a.map(v=>String(v)).join(' '); log.push(`[WARN] ${s}`); tline(`[WARN] ${s}`,'lwa'); }
+  };
+  
+  let fakeRequire = (mod) => { throw new Error(`require('${mod}') không hỗ trợ trong trình duyệt`); };
+  let fakeProcess = { env: {}, argv: ['node', name+'.js'], exit: () => { throw new Error('process.exit()'); } };
+  
+  let AsyncFn = Object.getPrototypeOf(async function(){}).constructor;
+  let finished = false;
+  function done(ok, err) {
+    if(finished) return;
+    finished = true;
+    if(!isBackground && document.getElementById('run-badge')) document.getElementById('run-badge').style.display = 'none';
+    let ms = (performance.now()-t0).toFixed(1);
+    tline(`> ${'─'.repeat(34)}`, 'lsy');
+    if(ok) tline(`> ✅ DONE (${ms}ms)`, 'lok');
+    else { tline(`> ❌ ERROR: ${err.message}`, 'ler'); if(err.stack) tline(`  ${err.stack.split('\n')[1]?.trim()}`, 'ler'); }
+    if(fbReady && !isBackground) {
+      let ns = { runs:(stats.runs||0)+1, ok:(stats.ok||0)+(ok?1:0), err:(stats.err||0)+(ok?0:1) };
+      db.ref('stats').set(ns).catch(()=>{});
+      db.ref('runs').push({ name, success: ok, at: Date.now(), preview: log.slice(0,2).join(' | ').slice(0,80) }).catch(()=>{});
+    }
+  }
+  try {
+    let fn = new AsyncFn('console','require','process', code);
+    fn(con, fakeRequire, fakeProcess).then(()=>done(true)).catch(e=>done(false,e));
+  } catch(e) { done(false, e); }
+}
+
+function runCode() { let name = document.getElementById('script-name').value.trim() || 'untitled'; let code = document.getElementById('code-editor').value; if(!code.trim()) toast('Code rỗng!', 'warn'); else executeCode(code, name, false); }
+
+// ========================= AUTO RUN (ON TAB) =========================
+function stopAutoRun() { if(autoTimer) { clearInterval(autoTimer); autoTimer = null; } isAutoRunning = false; document.getElementById('auto-badge').style.display = 'none'; document.getElementById('auto-btn').innerHTML = '⏱ AUTO'; }
+function startAutoRun() {
+  if(autoTimer) stopAutoRun();
+  let interval = bgIntervalSec;
+  isAutoRunning = true;
+  document.getElementById('auto-badge').style.display = 'inline-block';
+  document.getElementById('auto-btn').innerHTML = '⏹️ STOP';
+  tline(`🔄 AUTO MODE: mỗi ${interval} giây`, 'lsy');
+  executeCode(document.getElementById('code-editor').value, document.getElementById('script-name').value.trim() || 'auto', false);
+  autoTimer = setInterval(() => { executeCode(document.getElementById('code-editor').value, document.getElementById('script-name').value.trim() || 'auto', false); }, interval * 1000);
+}
+function toggleAutoRun() { isAutoRunning ? stopAutoRun() : startAutoRun(); }
+
+// ========================= UI HELPERS =========================
+function updateStatsUI() { document.getElementById('st-runs').innerText = stats.runs||0; document.getElementById('st-ok').innerText = stats.ok||0; document.getElementById('st-err').innerText = stats.err||0; }
+function renderRuns() { let el = document.getElementById('recent-runs'); if(!el) return; if(!runLogs.length) { el.innerHTML = 'CHƯA CÓ LẦN CHẠY NÀO'; return; } el.innerHTML = runLogs.slice(0,8).map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1c2235"><span style="color:${r.success?'#39ff14':'#ff3354'}">${r.success?'✓':'✗'}</span><span>${escapeHtml(r.name)}</span><span style="font-size:9px">${new Date(r.at).toLocaleTimeString()}</span></div>`).join(''); }
+function clearTerminal() { let term = document.getElementById('terminal'); if(term) term.innerHTML = '<span class="lsy">&gt; TERMINAL CLEARED.&#10;</span>'; }
+function clearEditor() { document.getElementById('code-editor').value = ''; document.getElementById('script-name').value = ''; stopAutoRun(); }
+function copyOutput() { let text = document.getElementById('terminal').textContent; navigator.clipboard.writeText(text).then(()=>toast('COPIED')).catch(()=>toast('COPY FAILED','err')); }
+
+window.addEventListener('load', () => { tline('> INITIALIZING...', 'lsy'); initFirebase(); });
+window.addEventListener('beforeunload', () => { if(autoTimer) clearInterval(autoTimer); if(backgroundTimer) clearInterval(backgroundTimer); });
+</script>
+</body>
+</html>
